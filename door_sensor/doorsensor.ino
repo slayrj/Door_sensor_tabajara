@@ -1,14 +1,12 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
  
-const char* ssid = "ssid";
-const char* password =  "ssid_password";
+const char* ssid = "nbz_iot";
+const char* password =  "jj4dnakfg";
 const char* mqttServer = "192.168.1.250";
 const int mqttPort = 1883;
-const char* mqttUser = "user_mqtt";
-const char* mqttPassword = "passw_mqtt";
-
-#define vermelho 5
+const char* mqttUser = "bruno";
+const char* mqttPassword = "dnakfg";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -18,8 +16,6 @@ ADC_MODE(ADC_VCC);
 void setup()  
 {
   Serial.begin(115200);
-  pinMode(vermelho, OUTPUT);
-  digitalWrite(vermelho, LOW);
   
   WiFi.begin(ssid, password);
  
@@ -50,34 +46,30 @@ void setup()
  
   Serial.println("Reed Acionado");
   // Obtendo calculando e formatando a VCC
-  uint16_t v = ESP.getVcc();
-  float_t v_cal = ((float)v/865.0f);
-  char v_str[10];
-  char voltuncal[10];
-  dtostrf(v_cal, 5, 2, v_str);
-  dtostrf(ESP.getVcc(), 5, 0, voltuncal);
-  // sprintf(v_str,"%s V", v_str);
-  Serial.print("Voltagem sem formatacao: ");
-  Serial.println(ESP.getVcc());
-  Serial.println(v_str);
+  
+  
+  float vdd = ESP.getVcc() / 766.0;
+  String vdd_str = String(vdd);
+  int vdd_crude = ESP.getVcc();
+  String vdd_str_crude = String(vdd_crude);
+   
+  // Prepare a JSON payload string
+  String payload = "{";
+  payload += "\"batt\":"; payload += vdd_str; payload += ",";
+  payload += "\"stat\":"; payload += "\"Activated\""; payload += ",";
+  payload += "\"batt_crude\":"; payload += vdd_str_crude;
+  payload += "}";
+
+  char attributes[100];
+  payload.toCharArray( attributes, 100 );
   
   // Enviando dados
-  Serial.println( "Alarme da Porta foi acionado" );
+  Serial.println( "Alarme da Porta da Cozinha Acionado!" );
   
-  client.publish("alarm/backdoor/status", "Activated");
-  client.publish("alarm/backdoor/status/batt", v_str);
-  client.publish("alarm/backdoor/status/realbatt", voltuncal);
-
-  if ( ESP.getVcc() < 2595 ){
-    digitalWrite(vermelho, HIGH);
-    Serial.println("Bateria Fraca!!");
-    }
-  else {
-    digitalWrite(vermelho, LOW);
-    Serial.println("Bateria Ok!!");
-    }
-  delay(500);
-  digitalWrite(vermelho, LOW);
+  //client.publish("alarm/backdoor/status", "Activated");
+  client.publish("alarm/backdoor/status", attributes);
+  
+  Serial.println( attributes );
   
 }
 
